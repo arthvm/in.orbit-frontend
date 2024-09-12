@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import ptBR from 'dayjs/locale/pt-BR'
 import { CheckCircle2, Plus } from 'lucide-react'
 import { getSummary } from '../http/get-summary'
+import { removeCompletion } from '../http/remove-completion'
 import { InOrbitIcon } from './in-orbit-icon'
 import { PendingGoals } from './pending-goals'
 import { Button } from './ui/button'
@@ -13,6 +14,8 @@ import { Separator } from './ui/separator'
 dayjs.locale(ptBR)
 
 export function Summary() {
+  const queryClient = useQueryClient()
+
   const { data } = useQuery({
     queryKey: ['summary'],
     queryFn: getSummary,
@@ -29,6 +32,13 @@ export function Summary() {
   const completedPercentage = Math.round(
     (data?.completed / data?.totalGoals) * 100
   )
+
+  async function handleRemoveCompletion(goalId: string) {
+    await removeCompletion(goalId)
+
+    queryClient.invalidateQueries({ queryKey: ['summary'] })
+    queryClient.invalidateQueries({ queryKey: ['pendingGoals'] })
+  }
 
   return (
     <div className="py-10 max-w-[480px] px-5 mx-auto flex flex-col gap-6">
@@ -97,6 +107,13 @@ export function Summary() {
                           <span className="text-zinc-100">{goal.title}</span>”
                           às <span className="text-zinc-100">{time}</span>
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCompletion(goal.id)}
+                          className="underline text-xs text-zinc-400"
+                        >
+                          Desfazer
+                        </button>
                       </li>
                     )
                   })}
